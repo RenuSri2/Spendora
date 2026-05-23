@@ -1,0 +1,154 @@
+// This is your Prisma schema file.
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  accounts      Account[]
+  sessions      Session[]
+  expenses      Expense[]
+  budgets       Budget[]
+  categories    Category[]
+  goals         Goal[]
+  receipts      Receipt[]
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  color     String    @default("#3B82F6")
+  icon      String    @default("ShoppingBag")
+  userId    String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expenses  Expense[]
+  budgets   Budget[]
+  
+  @@unique([name, userId])
+}
+
+model Expense {
+  id          String    @id @default(cuid())
+  amount      Float
+  description String
+  date        DateTime  @default(now())
+  userId      String
+  categoryId  String
+  receiptId   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    Category  @relation(fields: [categoryId], references: [id])
+  receipt     Receipt?  @relation(fields: [receiptId], references: [id])
+}
+
+model Budget {
+  id         String    @id @default(cuid())
+  name       String
+  amount     Float
+  spent      Float     @default(0)
+  period     String    // 'weekly', 'monthly', 'yearly'
+  startDate  DateTime
+  endDate    DateTime
+  userId     String
+  categoryId String?
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category   Category? @relation(fields: [categoryId], references: [id])
+}
+
+model Goal {
+  id          String    @id @default(cuid())
+  name        String
+  targetAmount Float
+  currentAmount Float   @default(0)
+  targetDate  DateTime?
+  userId      String
+  isCompleted Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Receipt {
+  id          String    @id @default(cuid())
+  fileName    String
+  filePath    String
+  fileType    String
+  extractedText String?
+  vendor      String?
+  totalAmount Float?
+  date        DateTime?
+  userId      String
+  processed   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expenses    Expense[]
+}
+
+model Product {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  imageUrl    String?
+  amazonPrice Float?
+  flipkartPrice Float?
+  amazonUrl   String?
+  flipkartUrl String?
+  lastUpdated DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([name])
+}
