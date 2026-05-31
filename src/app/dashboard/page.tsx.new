@@ -1,0 +1,65 @@
+// ... (previous imports remain the same)
+
+        {/* Two Tall, Thin Cards Layout */}
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Card - Budget Overview */}
+          <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 flex flex-col h-[500px]">
+            <h2 className="text-xl font-semibold text-white mb-4">
+              {selectedBudgets.length > 0 ? 'Selected Budget' : 'Budget Overview'}
+            </h2>
+            <div className="flex-1 flex flex-col justify-center">
+              <div className="text-center mb-6">
+                <span className="text-4xl font-bold text-cyan-400">{stats.budgetUsed.toFixed(0)}%</span>
+                <p className="text-gray-400 mt-2">
+                  {formatCurrency(stats.totalExpenses)} of {formatCurrency(stats.monthlyBudget)} spent
+                </p>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2.5 mb-2">
+                <div 
+                  className={`h-2.5 rounded-full transition-all duration-500 ${
+                    stats.budgetUsed >= 90 ? 'bg-red-500' : 
+                    stats.budgetUsed >= 75 ? 'bg-yellow-500' : 'bg-green-500'
+                  }`}
+                  style={{ width: `${Math.min(stats.budgetUsed, 100)}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-xs text-gray-400 mb-6">
+                <span>0%</span>
+                <span>50%</span>
+                <span>100%</span>
+              </div>
+              <div className="mt-auto">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-700/50 p-3 rounded-lg">
+                    <div className="text-gray-400 text-xs">Spent</div>
+                    <div className="text-lg font-semibold text-white">{formatCurrency(stats.totalExpenses)}</div>
+                  </div>
+                  <div className="bg-gray-700/50 p-3 rounded-lg">
+                    <div className="text-gray-400 text-xs">Remaining</div>
+                    <div className="text-lg font-semibold text-green-400">
+                      {formatCurrency(Math.max(0, stats.monthlyBudget - stats.totalExpenses))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Card - Spending Insights */}
+          <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 flex flex-col h-[500px] overflow-hidden">
+            <h2 className="text-xl font-semibold text-white mb-4">Spending Insights</h2>
+            <div className="flex-1 overflow-y-auto pr-2 -mr-2">
+              <SpendingInsights 
+                totalSpent={stats.totalExpenses}
+                monthlyBudget={stats.monthlyBudget}
+                budgetUsed={stats.budgetUsed}
+                topCategory={allExpenses[0]?.category || 'N/A'}
+                recentTransactions={stats.recentExpenses}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mt-6">
+          {/* ... rest of the file remains the same ... */}

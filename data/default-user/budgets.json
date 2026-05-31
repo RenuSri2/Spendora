@@ -1,0 +1,26 @@
+[
+  {
+    "name": "money",
+    "amount": 10000,
+    "spent": 9000,
+    "period": "monthly",
+    "startDate": "2025-10-15",
+    "endDate": "2025-11-15",
+    "isActive": true,
+    "id": "1760518995097",
+    "createdAt": "2025-10-15T09:03:15.097Z",
+    "userId": "default-user"
+  },
+  {
+    "name": "pocket",
+    "amount": 3000,
+    "spent": 2800,
+    "period": "monthly",
+    "startDate": "2025-09-15",
+    "endDate": "2025-10-15",
+    "isActive": true,
+    "id": "1757908150292",
+    "createdAt": "2025-09-15T03:49:10.292Z",
+    "userId": "default-user"
+  }
+]

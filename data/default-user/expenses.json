@@ -1,0 +1,66 @@
+[
+  {
+    "description": "tan",
+    "amount": 200,
+    "category": "Shopping",
+    "date": "2025-11-07",
+    "userId": "default-user",
+    "budgetId": "1757908150292",
+    "budgetName": "pocket",
+    "id": "1762513705743",
+    "createdAt": "2025-11-07T11:08:25.743Z"
+  },
+  {
+    "description": "test",
+    "amount": 9000,
+    "category": "Transportation",
+    "date": "2025-11-07",
+    "userId": "default-user",
+    "budgetId": "1760518995097",
+    "budgetName": "money",
+    "id": "1762513667806",
+    "createdAt": "2025-11-07T11:07:47.806Z"
+  },
+  {
+    "description": "Lunch",
+    "amount": 200,
+    "category": "Food & Dining",
+    "date": "2025-11-04",
+    "userId": "default-user",
+    "id": "1762254979362",
+    "createdAt": "2025-11-04T11:16:19.362Z"
+  },
+  {
+    "description": "watch",
+    "amount": 1500,
+    "category": "Bills & Utilities",
+    "date": "2025-10-12",
+    "userId": "default-user",
+    "budgetId": "1757908150292",
+    "budgetName": "pocket",
+    "id": "1760244512402",
+    "createdAt": "2025-10-12T04:48:32.402Z"
+  },
+  {
+    "description": "food",
+    "amount": 1000,
+    "category": "Food & Dining",
+    "date": "2025-10-12",
+    "userId": "default-user",
+    "budgetId": "1757908150292",
+    "budgetName": "pocket",
+    "id": "1760244360204",
+    "createdAt": "2025-10-12T04:46:00.205Z"
+  },
+  {
+    "description": "food",
+    "amount": 100,
+    "category": "Food & Dining",
+    "date": "2025-09-15",
+    "userId": "default-user",
+    "budgetId": "1757908150292",
+    "budgetName": "pocket",
+    "id": "1757908178277",
+    "createdAt": "2025-09-15T03:49:38.277Z"
+  }
+]
