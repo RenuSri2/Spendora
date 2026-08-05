@@ -1,0 +1,46 @@
+[
+  {
+    "description": "dress",
+    "amount": 1000,
+    "category": "Bills & Utilities",
+    "date": "2025-10-12",
+    "userId": "default-user",
+    "budgetId": "1760249012055",
+    "budgetName": "online",
+    "id": "1760249036376",
+    "createdAt": "2025-10-12T06:03:56.376Z"
+  },
+  {
+    "description": "watch",
+    "amount": 1500,
+    "category": "Bills & Utilities",
+    "date": "2025-10-12",
+    "userId": "default-user",
+    "budgetId": "1757908150292",
+    "budgetName": "pocket",
+    "id": "1760244512402",
+    "createdAt": "2025-10-12T04:48:32.402Z"
+  },
+  {
+    "description": "food",
+    "amount": 1000,
+    "category": "Food & Dining",
+    "date": "2025-10-12",
+    "userId": "default-user",
+    "budgetId": "1757908150292",
+    "budgetName": "pocket",
+    "id": "1760244360204",
+    "createdAt": "2025-10-12T04:46:00.205Z"
+  },
+  {
+    "description": "food",
+    "amount": 100,
+    "category": "Food & Dining",
+    "date": "2025-09-15",
+    "userId": "default-user",
+    "budgetId": "1757908150292",
+    "budgetName": "pocket",
+    "id": "1757908178277",
+    "createdAt": "2025-09-15T03:49:38.277Z"
+  }
+]

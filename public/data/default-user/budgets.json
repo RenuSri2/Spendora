@@ -1,0 +1,28 @@
+[
+  {
+    "name": "online",
+    "amount": 10000,
+    "spent": 1000,
+    "period": "monthly",
+    "startDate": "2025-10-12",
+    "endDate": "2025-11-12",
+    "categoryId": "3",
+    "categoryName": "Shopping",
+    "isActive": true,
+    "id": "1760249012055",
+    "createdAt": "2025-10-12T06:03:32.055Z",
+    "userId": "default-user"
+  },
+  {
+    "name": "pocket",
+    "amount": 3000,
+    "spent": 2600,
+    "period": "monthly",
+    "startDate": "2025-09-15",
+    "endDate": "2025-10-15",
+    "isActive": true,
+    "id": "1757908150292",
+    "createdAt": "2025-09-15T03:49:10.292Z",
+    "userId": "default-user"
+  }
+]
