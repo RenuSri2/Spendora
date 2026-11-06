@@ -8,8 +8,8 @@ export function detectPlatform(url: string): Platform {
     return 'generic'
   }
 
-  if (hostname.includes('amazon.')) return 'amazon'
-  if (hostname.includes('flipkart.')) return 'flipkart'
+  if (hostname.includes('amazon.') || hostname === 'amzn.in' || hostname === 'amzn.to' || hostname === 'a.co') return 'amazon'
+  if (hostname.includes('flipkart.') || hostname === 'fkrt.it' || hostname === 'fkrt.co') return 'flipkart'
   if (hostname.includes('myntra.')) return 'myntra'
   if (hostname.includes('nykaa.')) return 'nykaa'
   if (hostname.includes('croma.')) return 'croma'

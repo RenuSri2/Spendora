@@ -11,6 +11,14 @@ export const PLATFORM_DOMAINS: Record<Exclude<Platform, 'generic'>, string> = {
   croma: 'croma.com',
 }
 
+export const PLATFORM_LABELS: Record<Exclude<Platform, 'generic'>, string> = {
+  amazon: 'Amazon',
+  flipkart: 'Flipkart',
+  myntra: 'Myntra',
+  nykaa: 'Nykaa',
+  croma: 'Croma',
+}
+
 export const ALL_PLATFORMS: Exclude<Platform, 'generic'>[] = [
   'amazon', 'flipkart', 'myntra', 'nykaa', 'croma',
 ]
@@ -23,12 +31,19 @@ export const ALL_PLATFORMS: Exclude<Platform, 'generic'>[] = [
  * actual price (JSON-LD etc).
  */
 export async function searchPlatform(
-  productName: string,
+  query: string,
   platform: Exclude<Platform, 'generic'>
 ): Promise<SearchResult[]> {
   const domain = PLATFORM_DOMAINS[platform]
-  const query = `site:${domain} ${productName}`
-
-  const results = await searchSerper(query)
-  return results.filter((r) => r.url.includes(domain)).slice(0, 5)
+  const results = await searchSerper(`site:${domain} ${query}`)
+  return results
+    .filter((r) => {
+      try {
+        const host = new URL(r.url).hostname
+        return host === domain || host.endsWith(`.${domain}`)
+      } catch {
+        return false
+      }
+    })
+    .slice(0, 5)
 }

@@ -14,9 +14,17 @@ import {
 
 interface AnalysisResponse {
   success: boolean
+  partial?: boolean
+  notes?: string[]
+  meta?: {
+    insightSource: 'ai' | 'rules'
+    insightModel: string | null
+    insightError: string | null
+    renderBackend: string | null
+  }
   product: {
     name: string
-    price: number
+    price: number | null
     currency: string
     image: string | null
     platform: string
@@ -26,6 +34,8 @@ interface AnalysisResponse {
   priceHistory: Array<{ date: string; price: number }>
   comparison: Array<{
     platform: string
+    label?: string
+    source?: 'scraped' | 'google-shopping'
     matched: boolean
     name: string | null
     price: number | null
@@ -57,13 +67,19 @@ export default function AnalysisPage() {
   const router = useRouter()
 
   useEffect(() => {
-    const stored = localStorage.getItem('aiAnalysisResult')
-    if (stored) {
-      setAnalysis(JSON.parse(stored))
-    } else {
+    let parsed: AnalysisResponse | null = null
+    try {
+      const stored = localStorage.getItem('aiAnalysisResult')
+      parsed = stored ? JSON.parse(stored) : null
+    } catch {
+      parsed = null
+    }
+    // Older saved results (or corrupted storage) may be missing fields.
+    if (!parsed?.product || !Array.isArray(parsed.comparison)) {
       router.push('/ai-assistant')
       return
     }
+    setAnalysis(parsed)
     setLoading(false)
   }, [router])
 
@@ -79,6 +95,9 @@ export default function AnalysisPage() {
   }
 
   const { product, comparison, valueScore, dataConfidence, insight } = analysis
+  const notes = analysis.notes ?? []
+  const insightIsAi = analysis.meta?.insightSource !== 'rules'
+  const labelOf = (c: { platform: string; label?: string }) => c.label || c.platform
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'from-green-400 to-emerald-500'
@@ -99,7 +118,10 @@ export default function AnalysisPage() {
 
   // Real numbers, derived from actual matched comparisons — no fabricated ranges.
   const matchedComparisons = comparison.filter((c) => c.matched && c.price !== null)
-  const allPrices = [product.price, ...matchedComparisons.map((c) => c.price as number)]
+  const allPrices = [
+    ...(product.price !== null ? [product.price] : []),
+    ...matchedComparisons.map((c) => c.price as number),
+  ]
   const priceRangeText =
     allPrices.length > 1
       ? `₹${Math.min(...allPrices).toLocaleString('en-IN')} – ₹${Math.max(...allPrices).toLocaleString('en-IN')} across ${allPrices.length} confirmed listings`
@@ -151,13 +173,16 @@ export default function AnalysisPage() {
               </div>
               <div>
                 <h2 className="text-xl font-semibold">{valueScore.label}</h2>
-                <p className="text-gray-400 text-sm">₹{product.price.toLocaleString('en-IN')} on {product.platform}</p>
+                <p className="text-gray-400 text-sm">
+                  {product.price !== null ? `₹${product.price.toLocaleString('en-IN')}` : 'Price unavailable'} on {product.platform}
+                  {product.dataSource === 'search-listing' && ' (Google Shopping listing)'}
+                </p>
               </div>
             </div>
 
             <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-4 max-w-md">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold">AI Recommendation</h3>
+                <h3 className="font-semibold">{insightIsAi ? 'AI Recommendation' : 'Recommendation'}</h3>
                 <div className="flex items-center space-x-1 text-xs">
                   <div className={`w-2 h-2 rounded-full ${confidenceDotColor}`}></div>
                   <span className="text-gray-400 capitalize">{dataConfidence.level} confidence</span>
@@ -166,6 +191,9 @@ export default function AnalysisPage() {
               <p className="text-gray-300 text-sm">
                 {insight?.recommendation || 'AI narrative unavailable right now — the price and comparison data above is still real.'}
               </p>
+              {!insightIsAi && (
+                <p className="text-xs text-gray-500 mt-2">Rule-based summary — the AI model was unavailable for this request.</p>
+              )}
             </div>
           </div>
         </div>
@@ -179,8 +207,11 @@ export default function AnalysisPage() {
           {matchedComparisons.length > 0 ? (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {[{ platform: product.platform, price: product.price, url: product.url, confidence: null as number | null, isOrigin: true },
-                  ...matchedComparisons.map((c) => ({ platform: c.platform, price: c.price as number, url: c.url as string, confidence: c.confidence, isOrigin: false }))]
+                {[
+                  ...(product.price !== null
+                    ? [{ platform: product.platform, price: product.price, url: product.url, confidence: null as number | null, isOrigin: true, viaShopping: product.dataSource === 'search-listing' }]
+                    : []),
+                  ...matchedComparisons.map((c) => ({ platform: labelOf(c), price: c.price as number, url: c.url as string, confidence: c.confidence, isOrigin: false, viaShopping: c.source === 'google-shopping' }))]
                   .map((entry, index) => (
                     <div key={index} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-4">
                       <div className="flex justify-between items-start mb-2">
@@ -191,7 +222,11 @@ export default function AnalysisPage() {
                           </span>
                         )}
                       </div>
-                      <div className="text-2xl font-bold text-cyan-400 mb-3">₹{entry.price.toLocaleString('en-IN')}</div>
+                      <div className="text-2xl font-bold text-cyan-400 mb-1">₹{entry.price.toLocaleString('en-IN')}</div>
+                      <p className="text-xs text-gray-500 mb-3">
+                        {entry.isOrigin ? 'This listing' : 'Matched listing'}
+                        {entry.viaShopping ? ' · via Google Shopping' : ''}
+                      </p>
                       <a
                         href={entry.url}
                         target="_blank"
@@ -204,25 +239,51 @@ export default function AnalysisPage() {
                   ))}
               </div>
               {comparison.some((c) => !c.matched) && (
-                <p className="text-xs text-gray-500 mt-3">
-                  No confident match found on: {comparison.filter((c) => !c.matched).map((c) => c.platform).join(', ')}
-                </p>
+                <ul className="text-xs text-gray-500 mt-3 space-y-1">
+                  {comparison.filter((c) => !c.matched).map((c) => (
+                    <li key={c.platform}>
+                      No confident match on {labelOf(c)}
+                      {c.reason ? ` — ${c.reason}` : ''}
+                    </li>
+                  ))}
+                </ul>
               )}
             </>
           ) : (
             <div className="bg-gray-800/30 backdrop-blur-sm border border-gray-800 rounded-2xl p-6 text-center text-gray-400 text-sm">
-              {comparison.length > 0
-                ? `Checked ${comparison.length} platform${comparison.length > 1 ? 's' : ''} — no confident matches found.`
-                : 'Comparison search unavailable — check that SERPER_API_KEY is set in .env.'}
+              {comparison.length > 0 ? (
+                <>
+                  <p>Checked {comparison.length} platform{comparison.length > 1 ? 's' : ''} — no confident matches found.</p>
+                  <ul className="mt-3 space-y-1 text-xs text-gray-500">
+                    {comparison.map((c) => (
+                      <li key={c.platform}>{labelOf(c)}: {c.reason || 'no match'}</li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                'Comparison search unavailable — check that SERPER_API_KEY is set.'
+              )}
             </div>
           )}
         </div>
+
+        {notes.length > 0 && (
+          <div className="mb-8 bg-yellow-500/5 border border-yellow-600/30 rounded-xl p-4 text-sm text-yellow-200/80">
+            {notes.map((n, i) => (
+              <p key={i}>• {n}</p>
+            ))}
+          </div>
+        )}
 
         {/* Pros & Cons + Data Confidence */}
         {insight && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-6">
-              <h2 className="text-xl font-bold mb-4">Pros & Cons</h2>
+              <h2 className="text-xl font-bold mb-1">Pros & Cons</h2>
+              {insight.summary && <p className="text-gray-300 text-sm mb-4">{insight.summary}</p>}
+              <p className="text-xs text-gray-500 mb-4">
+                {insightIsAi ? `Written by ${analysis.meta?.insightModel || 'AI'} from the data above` : 'Rule-based, from the data above'}
+              </p>
 
               {insight.pros.length > 0 && (
                 <div className="mb-6">

@@ -1,5 +1,6 @@
 import { CheerioAPI } from 'cheerio'
 import { ExtractedRaw, Platform } from '../types'
+import { parsePrice } from '../price'
 
 function firstMatch($: CheerioAPI, selectors: string[]): string | null {
   for (const sel of selectors) {
@@ -21,12 +22,6 @@ function firstAttr(
   return null
 }
 
-function parsePrice(raw: string | null): number | null {
-  if (!raw) return null
-  const cleaned = raw.replace(/[^\d.]/g, '')
-  const num = parseFloat(cleaned)
-  return Number.isFinite(num) ? num : null
-}
 
 // NOTE: these selectors are current as of research at build time. E-commerce
 // sites change markup often (especially Amazon/Flipkart, which run frequent

@@ -27,8 +27,8 @@ function hostnameOf(url: string): string | null {
   }
 }
 
-async function searchGeneral(productName: string): Promise<RawResult[]> {
-  return searchSerper(`buy ${productName} online`)
+async function searchGeneral(query: string): Promise<RawResult[]> {
+  return searchSerper(`buy ${query} online`)
 }
 
 export interface DiscoveredListing {
@@ -48,12 +48,13 @@ export interface DiscoveredListing {
  */
 export async function discoverOtherSellers(
   productName: string,
+  query: string,
   originUrl: string,
   knownDomains: string[],
-  maxCandidates = 15
+  maxCandidates = 6
 ): Promise<DiscoveredListing[]> {
   const originHost = hostnameOf(originUrl)
-  const results = await searchGeneral(productName)
+  const results = await searchGeneral(query)
 
   const seenDomains = new Set<string>(knownDomains)
   if (originHost) seenDomains.add(originHost)
@@ -63,14 +64,19 @@ export async function discoverOtherSellers(
     const host = hostnameOf(r.url)
     if (!host) continue
     if (EXCLUDE_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`))) continue
-    if (seenDomains.has(host)) continue
+    if (seenDomains.has(host) || knownDomains.some((d) => host.endsWith(`.${d}`))) continue
     seenDomains.add(host)
     candidates.push(r)
     if (candidates.length >= maxCandidates) break
   }
 
   const attempts = await Promise.allSettled(
-    candidates.map(async (c) => ({ candidate: c, result: await scrapeProduct(c.url) }))
+    // Fetch-only (no browser render) and a short timeout: these are
+    // speculative candidates, not worth spending the request budget on.
+    candidates.map(async (c) => ({
+      candidate: c,
+      result: await scrapeProduct(c.url, { allowRender: false, allowUnblock: false, fetchTimeoutMs: 6000 }),
+    }))
   )
 
   const listings: DiscoveredListing[] = []
@@ -78,6 +84,9 @@ export async function discoverOtherSellers(
     if (attempt.status !== 'fulfilled') continue
     const { candidate, result } = attempt.value
     if (!result.success || result.price === null || !result.name) continue
+    // Only rupee prices are comparable — foreign stores would otherwise show
+    // a USD number as if it were ₹.
+    if (result.currency && result.currency !== 'INR') continue
 
     const score = nameSimilarity(productName, result.name)
     if (score < MATCH_CONFIDENCE_THRESHOLD) continue
