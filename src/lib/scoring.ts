@@ -25,12 +25,29 @@ export interface DataConfidence {
  * we have no real data source for those.
  */
 export function computeValueScore(
-  currentPrice: number,
+  currentPrice: number | null,
   comparison: ComparisonInput[],
   history: HistoryPoint[]
 ): ValueScore {
   const basis: string[] = []
   const matchedPrices = comparison.filter((c) => c.matched && c.price !== null).map((c) => c.price as number)
+
+  // The store page blocked us and no fallback price was found: we can't
+  // score this listing honestly, only point at what we did confirm.
+  if (currentPrice === null) {
+    if (matchedPrices.length > 0) {
+      const minPrice = Math.min(...matchedPrices)
+      return {
+        score: 50,
+        label: 'Check other stores',
+        basis: [
+          "Couldn't read the live price on the original listing",
+          `Lowest confirmed price elsewhere: ₹${minPrice.toLocaleString('en-IN')}`,
+        ],
+      }
+    }
+    return { score: 50, label: 'Price unavailable', basis: ["Couldn't read the live price on the original listing"] }
+  }
 
   let score = 60 // neutral baseline when we don't have enough signal either way
   basis.push('Baseline: not enough data for a confident read yet')
@@ -46,7 +63,7 @@ export function computeValueScore(
       score = Math.max(20, Math.round(90 - premium * 100))
       basis.length = 0
       basis.push(
-        `${Math.round(premium * 100)}% more expensive than the cheapest matched price (₹${minPrice})`
+        `${Math.round(premium * 100)}% more expensive than the cheapest matched price (₹${minPrice.toLocaleString('en-IN')})`
       )
     }
   }
@@ -84,6 +101,12 @@ export function computeDataConfidence(
   if (dataSource === 'json-ld') {
     reasons.push('Price pulled from structured product data — most reliable source')
     level = 'high'
+  } else if (dataSource === 'search-listing') {
+    reasons.push("Store page blocked us — price taken from the store's Google Shopping listing, verify before buying")
+    level = 'low'
+  } else if (dataSource === null) {
+    reasons.push("Couldn't read the price from the original listing")
+    level = 'low'
   } else if (dataSource === 'og-meta') {
     reasons.push('Price pulled from page metadata — generally reliable')
     level = 'medium'

@@ -4,21 +4,20 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { SparklesIcon, MagnifyingGlassIcon, ArrowRightIcon } from '@heroicons/react/24/outline'
 
+// Flash.co-style rotating text
+const rotatingTexts = [
+  'if it\'s worth buying or skipping',
+  'where to buy it for less',
+  'how its price compares across stores',
+  'if the price has dropped since last time',
+]
+
 export default function AIAssistantPage() {
   const [productUrl, setProductUrl] = useState('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [currentText, setCurrentText] = useState(0)
   const router = useRouter()
-
-  // Flash.co-style rotating text
-  const rotatingTexts = [
-    'for reviews that spill the truth',
-    'if it\'s worth buying or skipping',
-    'where to buy it for less',
-    'what experts really think',
-    'if the price will drop soon'
-  ]
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -33,12 +32,17 @@ export default function AIAssistantPage() {
       return
     }
 
-    // Validate URL format
+    // Validate + normalise URL (the server gets the same https:// form the
+    // check passed on — previously "amazon.in/…" passed here but was
+    // rejected by the API).
+    let normalizedUrl: string
     try {
-      const url = new URL(productUrl.startsWith('http') ? productUrl : `https://${productUrl}`)
+      const raw = productUrl.trim()
+      const url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`)
       if (!['http:', 'https:'].includes(url.protocol)) {
         throw new Error('Invalid protocol')
       }
+      normalizedUrl = url.toString()
     } catch {
       setErrorMessage('Oops. That doesn\'t look like a valid link. Try entering the full URL – like https://example.com.')
       return
@@ -51,27 +55,41 @@ export default function AIAssistantPage() {
       const response = await fetch('/api/ai-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productUrl })
+        body: JSON.stringify({ productUrl: normalizedUrl }),
+        signal: AbortSignal.timeout(75_000),
       })
 
-      const data = await response.json()
-      
-      if (data.success) {
+      // A platform timeout/crash returns an HTML error page, not JSON —
+      // read text first so that shows a real message instead of a parse error.
+      const text = await response.text()
+      let data: { success?: boolean; error?: string } | null = null
+      try {
+        data = JSON.parse(text)
+      } catch {
+        data = null
+      }
+
+      if (data?.success) {
         // Store analysis data and navigate to results
         localStorage.setItem('aiAnalysisResult', JSON.stringify(data))
         router.push('/ai-assistant/analysis')
+      } else if (data?.error) {
+        setErrorMessage(data.error)
+      } else if (response.status === 504) {
+        setErrorMessage('The analysis took too long and the server timed out. Please try again in a moment.')
       } else {
-        setErrorMessage(data.error || 'Failed to analyze product')
+        setErrorMessage(`The server returned an unexpected response (HTTP ${response.status}). Please try again.`)
       }
     } catch (error) {
-      setErrorMessage('Something went wrong. Please try again.')
+      const timedOut = error instanceof DOMException && (error.name === 'TimeoutError' || error.name === 'AbortError')
+      setErrorMessage(timedOut ? 'The analysis took too long. Please try again.' : 'Something went wrong. Please try again.')
       console.error('Analysis error:', error)
     } finally {
       setIsAnalyzing(false)
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault()
       handleAnalyze()
@@ -141,7 +159,7 @@ export default function AIAssistantPage() {
                     setProductUrl(e.target.value)
                     setErrorMessage('')
                   }}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyDown}
                   placeholder="Paste a product link here to see the AI magic"
                   className="w-full pl-16 pr-20 py-6 text-lg bg-gray-800/80 backdrop-blur-sm border border-gray-600 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200"
                   disabled={isAnalyzing}
@@ -175,7 +193,7 @@ export default function AIAssistantPage() {
                     <div className="animate-spin rounded-full h-5 w-5 border-2 border-cyan-400 border-t-transparent"></div>
                     <span className="text-lg">Analyzing with AI...</span>
                   </div>
-                  <p className="text-gray-400 mt-2">Fetching product details and pricing</p>
+                  <p className="text-gray-400 mt-2">Fetching the listing, comparing stores and writing the summary — this can take up to a minute</p>
                 </div>
               )}
             </div>
